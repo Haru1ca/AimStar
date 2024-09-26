@@ -7,24 +7,6 @@ on:
     #branches: [ "main" ]
 
 jobs:
-  build:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@main
-      - name: Setup MSBuild path
-        uses: microsoft/setup-msbuild@main
-      - name: Build with MSBuild
-        run: msbuild CS2_External\CS2_External.vcxproj /p:Configuration=Ring3 /p:Platform=x64
-      - name: Rename EXE to AimStar-Ring3-${{github.sha}}.exe
-        run: |
-          del AimStar-Ring3-*.exe
-          ren AimStar-Ring3.exe AimStar-Ring3-${{github.sha}}.exe
-        working-directory: CS2_External\x64\Ring3\
-      - name: Upload the output
-        uses: actions/upload-artifact@main
-        with:
-          name: ci
-          path: CS2_External\x64\Ring3\*
   buildKernel:
     runs-on: windows-latest
     steps:
@@ -48,24 +30,6 @@ jobs:
         with:
           name: cike
           path: x64\Release\*
-  buildllvm:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@main
-      - name: Set up Developer Command Prompt
-        uses: ilammy/msvc-dev-cmd@v1
-      - name: Compile with llvm
-        run: msbuild CS2_External\CS2_External.vcxproj /p:Configuration=Ring3 /p:Platform="x64" /p:CLToolExe=clang-cl.exe /p:CLToolPath="C:\Program Files\LLVM\bin"
-      - name: Rename EXE to LLVM-AimStar-Ring3-${{github.sha}}.exe
-        run: |
-          del LLVM-AimStar-Ring3-*.exe
-          ren AimStar-Ring3.exe LLVM-AimStar-Ring3-${{github.sha}}.exe
-        working-directory: CS2_External\x64\Ring3\
-      - name: Upload the output
-        uses: actions/upload-artifact@main
-        with:
-          name: llvm
-          path: CS2_External\x64\Ring3\*
   create_release:
     runs-on: ubuntu-latest
     needs: [build, buildKernel, buildllvm]
@@ -75,11 +39,6 @@ jobs:
       - name: Download Artifact
         uses: actions/download-artifact@main
       - run: ls -R
-      - name: Zip ci
-        uses: vimtor/action-zip@master
-        with:
-          files: ./ci/AimStar-Ring3-${{github.sha}}.exe           
-          dest: AimStar-R3-Autobuild.zip
       - name: Zip cir0
         uses: vimtor/action-zip@master
         with:
@@ -90,11 +49,6 @@ jobs:
         with:
           files: ./cike/Driver.sys
           dest: AimStar-Driver-Autobuild.zip    
-      - name: Zip llvm ci
-        uses: vimtor/action-zip@master
-        with:
-          files: ./llvm/LLVM-AimStar-Ring3-${{github.sha}}.exe         
-          dest: AimStar-LLVM-Autobuild.zip
       - name: Delete tag
         run: gh release delete autobuild --cleanup-tag
         env:
@@ -120,7 +74,5 @@ jobs:
           files: |
             AimStar-R0-Autobuild.zip
             AimStar-Driver-Autobuild.zip
-            AimStar-R3-Autobuild.zip
-            AimStar-LLVM-Autobuild.zip
           prerelease: true
         
